@@ -1,5 +1,5 @@
 {
-  "name": "clean-nextjs",
+  "name": "brosur-ahad-pagi",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -13,9 +13,12 @@
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.7",
     "@types/mark.js": "^8.11.12",
+    "adm-zip": "^0.5.10",
     "cheerio": "^1.2.0",
+    "chmlib-ts": "^0.3.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
+    "html2canvas": "^1.4.1",
     "iconv-lite": "^0.7.3",
     "lucide-react": "^1.25.0",
     "mark.js": "^8.11.1",
@@ -26,6 +29,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/adm-zip": "^0.5.5",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

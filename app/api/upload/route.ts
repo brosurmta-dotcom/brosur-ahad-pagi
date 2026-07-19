@@ -1,6 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { createClient } from '@/utils/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,29 +14,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Hanya file .chm atau .zip yang diizinkan.' }, { status: 400 });
     }
 
-    // Prepare upload directory
-    const uploadDir = path.join(process.cwd(), 'chm-uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    const supabase = await createClient();
+
+    // Pastikan user terautentikasi (admin)
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const filePath = path.join(uploadDir, file.name);
-
-    // Write file to disk
+    // Unggah file ke Supabase Storage (Bucket: chm-uploads)
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    
+    // Convert File to ArrayBuffer/Buffer for Supabase Storage
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    
-    fs.writeFileSync(filePath, buffer);
 
-    // Note: To automatically extract the CHM and add it to index.json, 
-    // we would need a native dependency (like extract-chm) or we just instruct 
-    // the user to run `node parse_chm.js` after extracting manually, 
-    // which is the current workflow.
+    const { data, error } = await supabase
+      .storage
+      .from('chm-uploads')
+      .upload(fileName, buffer, {
+        contentType: file.type || (file.name.endsWith('.zip') ? 'application/zip' : 'application/vnd.ms-htmlhelp'),
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Storage Upload Error:', error);
+      return NextResponse.json({ error: 'Gagal mengunggah ke Supabase Storage: ' + error.message }, { status: 500 });
+    }
+
+    // Dapatkan URL publik dari file yang baru diunggah
+    const { data: { publicUrl } } = supabase.storage.from('chm-uploads').getPublicUrl(fileName);
 
     return NextResponse.json({ 
       success: true, 
-      message: 'File berhasil disimpan.',
-      path: filePath
+      message: 'File berhasil disimpan di Cloud.',
+      path: publicUrl
     });
     
   } catch (error) {
